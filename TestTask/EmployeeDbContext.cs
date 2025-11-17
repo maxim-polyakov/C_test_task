@@ -10,7 +10,7 @@ namespace TestTask
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             // Строка подключения к PostgreSQL
-            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=password");
+            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=EmployeeDB;Username=postgres;Password=password");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
