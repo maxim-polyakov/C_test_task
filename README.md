@@ -30,7 +30,7 @@
 
 ## 🗄️ Структура базы данных
 
-### База данных: postgres
+### База данных: EmployeeDB
 
 #### Таблица: Employees
 
@@ -109,7 +109,7 @@ public class EmployeeDbContext : DbContext
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             // Строка подключения к PostgreSQL
-            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=password");
+            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=EmployeeDB;Username=postgres;Password=password");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -188,13 +188,13 @@ public class EmployeeDbContext : DbContext
 ### 1. Настройка базы данных PostgreSQL
 Выполните в psql или pgAdmin:
 ```sql
-CREATE DATABASE "postgres";
+CREATE DATABASE "EmployeeDB";
 ```
 
 ### 2. Конфигурация подключения
 Измените строку подключения в EmployeeDbContext.cs:
 ```csharp
-optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=postgres;Username=your_username;Password=password");
+optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=EmployeeDB;Username=your_username;Password=password");
 ```
 
 ### 3. Запуск приложения
@@ -280,7 +280,7 @@ dotnet run
 
 - Убедитесь, что PostgreSQL запущен и доступен
 - Проверьте строку подключения
-- Убедитесь, что база данных postgres существует
+- Убедитесь, что база данных EmployeeDB существует
 - Установите все необходимые NuGet пакеты
 
 ---
