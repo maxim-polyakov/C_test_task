@@ -9,7 +9,7 @@ namespace  TestTask
         static void Main()
         {
             // Строка подключения к PostgreSQL
-            const string connectionString = "Host=localhost;Port=5432;Database=EmployeeDB;Username=postgres;Password=your_password";
+            const string connectionString = "Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=password";
         
             var dbHelper = new DatabaseHelper(connectionString);
             var employeeService = new EmployeeService(dbHelper);
