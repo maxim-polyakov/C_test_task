@@ -1,27 +1,24 @@
-﻿// Program.cs
-using System;
-using Npgsql;
+﻿using System;
 
-namespace  TestTask
+namespace TestTask
 {
     class Program
     {
         static void Main()
         {
-            // Строка подключения к PostgreSQL
-            const string connectionString = "Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=password";
-        
-            var dbHelper = new DatabaseHelper(connectionString);
-            var employeeService = new EmployeeService(dbHelper);
+            // Создаем контекст базы данных
+            using var context = new EmployeeDbContext();
+            var employeeService = new EmployeeService(context);
 
             try
             {
-                // Тестируем подключение
-                dbHelper.TestConnection();
+                // Инициализируем базу данных (создаем таблицы если их нет)
+                employeeService.InitializeDatabase();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Ошибка подключения к базе данных: {ex.Message}");
+                Console.WriteLine($"❌ Критическая ошибка инициализации базы данных: {ex.Message}");
+                Console.WriteLine("Проверьте строку подключения и настройки PostgreSQL.");
                 Console.WriteLine("Нажмите любую клавишу для выхода...");
                 Console.ReadKey();
                 return;

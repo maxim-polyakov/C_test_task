@@ -1,16 +1,33 @@
-﻿// EmployeeService.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+
 
 namespace TestTask
 {
     public class EmployeeService
     {
-        private readonly DatabaseHelper _dbHelper;
+        private readonly EmployeeDbContext _context;
 
-        public EmployeeService(DatabaseHelper dbHelper)
+        public EmployeeService(EmployeeDbContext context)
         {
-            _dbHelper = dbHelper;
+            _context = context;
+        }
+
+        public void InitializeDatabase()
+        {
+            try
+            {
+                // Создаем базу данных и таблицы, если они не существуют
+                _context.Database.EnsureCreated();
+                Console.WriteLine("✅ База данных и таблицы созданы успешно!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка инициализации базы данных: {ex.Message}");
+                throw;
+            }
         }
 
         public void AddNewEmployee()
@@ -18,18 +35,18 @@ namespace TestTask
             try
             {
                 Console.WriteLine("\n=== Добавление нового сотрудника ===");
-            
+                
                 var employee = new Employee();
-            
+                
                 Console.Write("Введите имя: ");
-                employee.FirstName = Console.ReadLine();
-            
+                employee.FirstName = Console.ReadLine() ?? "";
+                
                 Console.Write("Введите фамилию: ");
-                employee.LastName = Console.ReadLine();
-            
+                employee.LastName = Console.ReadLine() ?? "";
+                
                 Console.Write("Введите email: ");
-                employee.Email = Console.ReadLine();
-            
+                employee.Email = Console.ReadLine() ?? "";
+                
                 Console.Write("Введите дату рождения (гггг-мм-дд): ");
                 if (!DateTime.TryParse(Console.ReadLine(), out DateTime dateOfBirth))
                 {
@@ -37,7 +54,7 @@ namespace TestTask
                     return;
                 }
                 employee.DateOfBirth = dateOfBirth;
-            
+                
                 Console.Write("Введите зарплату: ");
                 if (!decimal.TryParse(Console.ReadLine(), out decimal salary))
                 {
@@ -46,12 +63,32 @@ namespace TestTask
                 }
                 employee.Salary = salary;
 
-                var employeeId = _dbHelper.AddEmployee(employee);
-                Console.WriteLine($"✅ Сотрудник успешно добавлен с ID: {employeeId}");
+                // Проверка валидации данных
+                var validationContext = new ValidationContext(employee);
+                var validationResults = new List<ValidationResult>();
+                
+                if (!Validator.TryValidateObject(employee, validationContext, validationResults, true))
+                {
+                    Console.WriteLine("❌ Ошибки валидации:");
+                    foreach (var validationResult in validationResults)
+                    {
+                        Console.WriteLine($"  - {validationResult.ErrorMessage}");
+                    }
+                    return;
+                }
+
+                _context.Employees.Add(employee);
+                _context.SaveChanges();
+                
+                Console.WriteLine($"✅ Сотрудник успешно добавлен с ID: {employee.EmployeeID}");
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+            {
+                Console.WriteLine($"❌ Ошибка при добавлении сотрудника: {ex.InnerException?.Message ?? ex.Message}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Ошибка при добавлении сотрудника: {ex.Message}");
+                Console.WriteLine($"❌ Ошибка: {ex.Message}");
             }
         }
 
@@ -60,10 +97,10 @@ namespace TestTask
             try
             {
                 Console.WriteLine("\n=== Список всех сотрудников ===");
-            
-                var employees = _dbHelper.GetAllEmployees();
-            
-                if (employees.Count == 0)
+                
+                var employees = _context.Employees.OrderBy(e => e.EmployeeID).ToList();
+                
+                if (!employees.Any())
                 {
                     Console.WriteLine("Сотрудники не найдены.");
                     return;
@@ -73,7 +110,7 @@ namespace TestTask
                 {
                     Console.WriteLine(employee);
                 }
-            
+                
                 Console.WriteLine($"\nВсего сотрудников: {employees.Count}");
             }
             catch (Exception ex)
@@ -87,7 +124,7 @@ namespace TestTask
             try
             {
                 Console.WriteLine("\n=== Обновление информации о сотруднике ===");
-            
+                
                 Console.Write("Введите ID сотрудника для обновления: ");
                 if (!int.TryParse(Console.ReadLine(), out int employeeId))
                 {
@@ -95,7 +132,7 @@ namespace TestTask
                     return;
                 }
 
-                var existingEmployee = _dbHelper.GetEmployeeById(employeeId);
+                var existingEmployee = _context.Employees.Find(employeeId);
                 if (existingEmployee == null)
                 {
                     Console.WriteLine("❌ Сотрудник с указанным ID не найден!");
@@ -113,75 +150,96 @@ namespace TestTask
                 Console.Write("Выберите опцию: ");
 
                 var choice = Console.ReadLine();
-                var updatedEmployee = new Employee
-                {
-                    EmployeeID = existingEmployee.EmployeeID,
-                    FirstName = existingEmployee.FirstName,
-                    LastName = existingEmployee.LastName,
-                    Email = existingEmployee.Email,
-                    DateOfBirth = existingEmployee.DateOfBirth,
-                    Salary = existingEmployee.Salary
-                };
+                var isModified = false;
 
                 switch (choice)
                 {
                     case "1":
                         Console.Write("Введите новое имя: ");
-                        updatedEmployee.FirstName = Console.ReadLine();
+                        existingEmployee.FirstName = Console.ReadLine() ?? "";
+                        isModified = true;
                         break;
                     case "2":
                         Console.Write("Введите новую фамилию: ");
-                        updatedEmployee.LastName = Console.ReadLine();
+                        existingEmployee.LastName = Console.ReadLine() ?? "";
+                        isModified = true;
                         break;
                     case "3":
                         Console.Write("Введите новый email: ");
-                        updatedEmployee.Email = Console.ReadLine();
+                        existingEmployee.Email = Console.ReadLine() ?? "";
+                        isModified = true;
                         break;
                     case "4":
                         Console.Write("Введите новую дату рождения (гггг-мм-дд): ");
                         if (DateTime.TryParse(Console.ReadLine(), out DateTime newDob))
-                            updatedEmployee.DateOfBirth = newDob;
+                        {
+                            existingEmployee.DateOfBirth = newDob;
+                            isModified = true;
+                        }
                         else
                             Console.WriteLine("❌ Неверный формат даты!");
                         break;
                     case "5":
                         Console.Write("Введите новую зарплату: ");
                         if (decimal.TryParse(Console.ReadLine(), out decimal newSalary))
-                            updatedEmployee.Salary = newSalary;
+                        {
+                            existingEmployee.Salary = newSalary;
+                            isModified = true;
+                        }
                         else
                             Console.WriteLine("❌ Неверный формат зарплаты!");
                         break;
                     case "6":
                         Console.Write("Введите имя: ");
-                        updatedEmployee.FirstName = Console.ReadLine();
+                        existingEmployee.FirstName = Console.ReadLine() ?? "";
                         Console.Write("Введите фамилию: ");
-                        updatedEmployee.LastName = Console.ReadLine();
+                        existingEmployee.LastName = Console.ReadLine() ?? "";
                         Console.Write("Введите email: ");
-                        updatedEmployee.Email = Console.ReadLine();
+                        existingEmployee.Email = Console.ReadLine() ?? "";
                         Console.Write("Введите дату рождения (гггг-мм-дд): ");
                         if (DateTime.TryParse(Console.ReadLine(), out DateTime dob))
-                            updatedEmployee.DateOfBirth = dob;
+                            existingEmployee.DateOfBirth = dob;
                         else
                             Console.WriteLine("❌ Неверный формат даты!");
                         Console.Write("Введите зарплату: ");
                         if (decimal.TryParse(Console.ReadLine(), out decimal salary))
-                            updatedEmployee.Salary = salary;
+                            existingEmployee.Salary = salary;
                         else
                             Console.WriteLine("❌ Неверный формат зарплаты!");
+                        isModified = true;
                         break;
                     default:
                         Console.WriteLine("❌ Неверный выбор!");
                         return;
                 }
 
-                if (_dbHelper.UpdateEmployee(updatedEmployee))
+                if (isModified)
+                {
+                    // Проверка валидации обновленных данных
+                    var validationContext = new ValidationContext(existingEmployee);
+                    var validationResults = new List<ValidationResult>();
+                    
+                    if (!Validator.TryValidateObject(existingEmployee, validationContext, validationResults, true))
+                    {
+                        Console.WriteLine("❌ Ошибки валидации:");
+                        foreach (var validationResult in validationResults)
+                        {
+                            Console.WriteLine($"  - {validationResult.ErrorMessage}");
+                        }
+                        return;
+                    }
+
+                    _context.SaveChanges();
                     Console.WriteLine("✅ Информация о сотруднике успешно обновлена!");
-                else
-                    Console.WriteLine("❌ Ошибка при обновлении информации о сотруднике!");
+                }
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+            {
+                Console.WriteLine($"❌ Ошибка при обновлении сотрудника: {ex.InnerException?.Message ?? ex.Message}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Ошибка при обновлении сотрудника: {ex.Message}");
+                Console.WriteLine($"❌ Ошибка: {ex.Message}");
             }
         }
 
@@ -190,7 +248,7 @@ namespace TestTask
             try
             {
                 Console.WriteLine("\n=== Удаление сотрудника ===");
-            
+                
                 Console.Write("Введите ID сотрудника для удаления: ");
                 if (!int.TryParse(Console.ReadLine(), out int employeeId))
                 {
@@ -198,7 +256,7 @@ namespace TestTask
                     return;
                 }
 
-                var existingEmployee = _dbHelper.GetEmployeeById(employeeId);
+                var existingEmployee = _context.Employees.Find(employeeId);
                 if (existingEmployee == null)
                 {
                     Console.WriteLine("❌ Сотрудник с указанным ID не найден!");
@@ -211,19 +269,22 @@ namespace TestTask
 
                 if (confirmation?.ToLower() == "да")
                 {
-                    if (_dbHelper.DeleteEmployee(employeeId))
-                        Console.WriteLine("✅ Сотрудник успешно удален!");
-                    else
-                        Console.WriteLine("❌ Ошибка при удалении сотрудника!");
+                    _context.Employees.Remove(existingEmployee);
+                    _context.SaveChanges();
+                    Console.WriteLine("✅ Сотрудник успешно удален!");
                 }
                 else
                 {
                     Console.WriteLine("❌ Удаление отменено.");
                 }
             }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+            {
+                Console.WriteLine($"❌ Ошибка при удалении сотрудника: {ex.InnerException?.Message ?? ex.Message}");
+            }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Ошибка при удалении сотрудника: {ex.Message}");
+                Console.WriteLine($"❌ Ошибка: {ex.Message}");
             }
         }
 
@@ -232,9 +293,25 @@ namespace TestTask
             try
             {
                 Console.WriteLine("\n=== Сотрудники с зарплатой выше средней ===");
-            
-                var count = _dbHelper.GetEmployeesCountAboveAverageSalary();
+                
+                var averageSalary = _context.Employees.Average(e => e.Salary);
+                var count = _context.Employees.Count(e => e.Salary > averageSalary);
+                var aboveAverageEmployees = _context.Employees
+                    .Where(e => e.Salary > averageSalary)
+                    .OrderByDescending(e => e.Salary)
+                    .ToList();
+                
+                Console.WriteLine($"Средняя зарплата: {averageSalary:C}");
                 Console.WriteLine($"Количество сотрудников с зарплатой выше средней: {count}");
+                
+                if (aboveAverageEmployees.Any())
+                {
+                    Console.WriteLine("\nСотрудники с зарплатой выше средней:");
+                    foreach (var employee in aboveAverageEmployees)
+                    {
+                        Console.WriteLine($"  - {employee.FirstName} {employee.LastName}: {employee.Salary:C}");
+                    }
+                }
             }
             catch (Exception ex)
             {
