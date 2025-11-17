@@ -1,6 +1,6 @@
 # Employee Management System
 
-Простое консольное приложение для управления информацией о сотрудниках с использованием C# и MS SQL Server.
+Простое консольное приложение для управления информацией о сотрудниками с использованием C# и PostgreSQL.
 
 ## 📋 Описание проекта
 
@@ -29,22 +29,22 @@
 #### Таблица: `Employees`
 | Столбец | Тип данных | Описание |
 |---------|------------|-----------|
-| EmployeeID | int | PRIMARY KEY, автоинкремент |
-| FirstName | nvarchar(50) | Имя сотрудника |
-| LastName | nvarchar(50) | Фамилия сотрудника |
-| Email | nvarchar(100) | Электронная почта |
+| EmployeeID | integer | PRIMARY KEY, автоинкремент (SERIAL) |
+| FirstName | varchar(50) | Имя сотрудника |
+| LastName | varchar(50) | Фамилия сотрудника |
+| Email | varchar(100) | Электронная почта |
 | DateOfBirth | date | Дата рождения |
-| Salary | decimal | Зарплата |
+| Salary | decimal(10,2) | Зарплата |
 
 ## 🛠️ Технические требования
 
 ### Необходимое ПО:
 - **.NET 6.0** или выше
-- **MS SQL Server** (Developer Edition или Express Edition)
+- **PostgreSQL** 12.0 или выше
 - **Entity Framework Core**
 
 ### Установленные NuGet пакеты:
 ```xml
 <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.0" />
 <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.0" />
-<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.0" />
+<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.0" />
