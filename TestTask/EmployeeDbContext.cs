@@ -1,5 +1,4 @@
-﻿// Data/EmployeeDbContext.cs
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace TestTask
 {
